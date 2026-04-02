@@ -1,0 +1,21 @@
+package com.content.content_stream.user.token;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.TimeToLive;
+
+@Getter
+@AllArgsConstructor
+@RedisHash("refresh_token")
+public class RefreshToken {
+
+    @Id
+    private String email;
+
+    private String token;
+
+    @TimeToLive
+    private long expiration;  // 초(seconds) 단위
+}
