@@ -28,9 +28,9 @@ OTT 플랫폼 백엔드 API 서버입니다. Netflix와 같은 구독형 콘텐�
 │                  Docker Network                   │
 │                                                   │
 │  ┌──────────────┐       ┌───────────────────────┐ │
-│  │  content-    │       │       ServerDB        │ │
-│  │  stream:8082 │─────▶│  PostgreSQL (mydb)    │ │
-│  │              │       │  Redis (game_redis)   │ │
+│  │  content-    │       │  PostgreSQL           │ │
+│  │  stream:8082 │─────▶│  (postgres:5432)      │ │
+│  │              │       │  Redis (redis:6379)   │ │
 │  └──────┬───────┘       └───────────────────────┘ │
 │         │                                         │
 │         │         ┌──────────────────────┐        │
@@ -142,24 +142,32 @@ Content (콘텐츠)
 
 ### 사전 요구사항
 - Docker, Docker Compose
-- [ServerDB](https://github.com/diaryhub) 프로젝트 실행 필요 (PostgreSQL, Redis)
 
-### 환경변수 설정
-프로젝트 루트에 `.env` 파일 생성:
-```env
-DB_NAME=content
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
-JWT_SECRET=your-secret-key-must-be-at-least-256-bits-long
-```
+PostgreSQL, Redis, Kafka, Zookeeper가 모두 `docker-compose.yml`에 포함되어 있어 별도 설치가 필요 없습니다.
 
 ### 실행
 ```bash
-# ServerDB 먼저 실행 (PostgreSQL, Redis)
-cd ../ServerDB && docker compose up -d
+docker compose up -d --build
+```
 
-# content-stream 실행
-cd ../content-stream && docker compose up -d
+### 환경변수 설정 (선택)
+로컬 실행용 기본값이 `docker-compose.yml`에 들어 있어 설정 없이 바로 실행됩니다.
+값을 바꾸려면 `.env.example`을 복사해 `.env`를 만들고 수정하세요. `.env`는 Git에 올라가지 않습니다.
+```bash
+cp .env.example .env
+```
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
+| `DB_NAME` | `content` | PostgreSQL 데이터베이스 이름 |
+| `DB_USERNAME` | `postgres` | DB 계정 |
+| `DB_PASSWORD` | `postgres` | DB 비밀번호 |
+| `JWT_SECRET` | 로컬 전용 샘플 키 | JWT 서명 키 (256비트 이상). 운영에서는 반드시 변경 |
+
+### 종료
+```bash
+docker compose down        # 컨테이너만 종료 (DB 데이터 유지)
+docker compose down -v     # DB 데이터까지 삭제
 ```
 
 ### API 문서

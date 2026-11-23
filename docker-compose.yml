@@ -1,5 +1,31 @@
 services:
 
+  # ===== PostgreSQL =====
+  postgres:
+    image: postgres:16-alpine
+    container_name: content-stream-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-content}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ===== Redis =====
+  redis:
+    image: redis:7-alpine
+    container_name: content-stream-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   # ===== Zookeeper =====
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -7,8 +33,6 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - serverdb_default
 
   # ===== Kafka =====
   kafka:
@@ -31,8 +55,6 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
-    networks:
-      - serverdb_default
 
   # ===== Spring Boot App =====
   app:
@@ -41,19 +63,21 @@ services:
     ports:
       - "8082:8080"
     depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
       kafka:
         condition: service_healthy
     environment:
-      DB_URL: jdbc:postgresql://mydb:5432/${DB_NAME}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: game_redis
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-content}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      REDIS_HOST: redis
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      JWT_SECRET: ${JWT_SECRET}
-    networks:
-      - serverdb_default
+      # 로컬 실행용 기본값입니다. 운영에서는 반드시 .env로 덮어쓰세요.
+      JWT_SECRET: ${JWT_SECRET:-local-dev-only-secret-key-change-me-0123456789abcdef}
 
-networks:
-  serverdb_default:
-    external: true
+volumes:
+  postgres-data:
