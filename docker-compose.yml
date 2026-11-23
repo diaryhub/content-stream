@@ -38,6 +38,8 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: content-stream-kafka
+    # 재시작 직후 Zookeeper에 이전 브로커 세션이 남아 있으면(NodeExists) 종료되므로, 세션 만료 후 자동 재시도
+    restart: on-failure
     depends_on:
       - zookeeper
     ports:
